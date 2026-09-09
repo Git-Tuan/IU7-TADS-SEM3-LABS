@@ -1,0 +1,1 @@
+gcc -std=c99 -Wall -Wextra -Wpedantic main.c -o app.exe -g
