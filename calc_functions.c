@@ -57,9 +57,6 @@ void multiply_long_numbers(const long_number_t *a, const long_number_t *b, long_
     result->exp = a->exp + b->exp;
 }
 
-/**
- * Преобразует массив тетрад (от младших к старшим) в десятичную строку (без точки).
- */
 void tetrads_to_string(char *mant_str, const int *tetrads, size_t len)
 {
     char *ptr = mant_str;
@@ -73,32 +70,21 @@ void tetrads_to_string(char *mant_str, const int *tetrads, size_t len)
     }
 }
 
-
-/**
- * Округляет мантиссу до MAX_MANTISSA_LEN - 1 (30) значащих цифр.
- * Принимает строку mantissa (изменяемую) и указатель на carry_exp (флаг переноса).
- * Если длина <= 30, ничего не делает.
- * Если > 30, анализирует 31-й символ (индекс 30):
- *   - если < '5' – просто отбрасывает хвост;
- *   - если >= '5' – добавляет 1 к 30-й цифре с обработкой переноса.
- * В случае переноса через все 30 разрядов (было "999...9" + 1) мантисса становится
- * "1000...0" (единица и 29 нулей), а carry_exp устанавливается в 1.
- */
 void round_mantissa(char *mantissa, int *carry_exp)
 {
     int len = strlen(mantissa);
     *carry_exp = 0;
 
-    if (len <= MAX_MANTISSA_LEN - 1)
+    if (len <= MAX_INT_LENGTH - 1)
         return;
 
-    char round_digit = mantissa[MAX_MANTISSA_LEN - 1];
-    mantissa[MAX_MANTISSA_LEN - 1] = '\0';
+    char round_digit = mantissa[MAX_INT_LENGTH - 1];
+    mantissa[MAX_INT_LENGTH - 1] = '\0';
 
     if (round_digit >= '5')
     {
         int flag = 1;
-        int i = MAX_MANTISSA_LEN - 2;
+        int i = MAX_INT_LENGTH - 2;
         while (i >= 0 && flag)
         {
             if (mantissa[i] == '9')
@@ -112,7 +98,7 @@ void round_mantissa(char *mantissa, int *carry_exp)
         if (i < 0)
         {
             mantissa[0] = '1';
-            for (int j = 1; j < MAX_MANTISSA_LEN - 1; j++)
+            for (int j = 1; j < MAX_INT_LENGTH - 1; j++)
                 mantissa[j] = '0';
             *carry_exp = 1;
         }
