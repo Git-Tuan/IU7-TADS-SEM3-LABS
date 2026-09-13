@@ -1,0 +1,10 @@
+#ifndef DEFINES_H
+#define DEFINES_H
+
+#define MAX_INT_LENGTH 41
+#define MAX_MANTISSA_LEN 31
+#define MAX_RESULT_TETRADS 20
+#define MAX_EXPONENT 99999
+
+
+#endif
