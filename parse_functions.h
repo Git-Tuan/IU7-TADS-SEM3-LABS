@@ -2,8 +2,9 @@
 #define PARSE_FUNCTIONS_H
 #include "defines.h"
 #include "status.h"
+#include "stddef.h"
 
-typedef struct 
+typedef struct
 {
     char sign;
     char mantissa[MAX_MANTISSA_LEN];
@@ -11,7 +12,7 @@ typedef struct
     int exponent;
 } floating_point_t;
 
-typedef struct 
+typedef struct
 {
     char sign;
     char integer_str_format[MAX_INT_LENGTH];

@@ -4,7 +4,7 @@
 #include "status.h"
 #include <stddef.h>
 
-typedef struct 
+typedef struct
 {
     int tetrads[MAX_RESULT_TETRADS];
     size_t len;

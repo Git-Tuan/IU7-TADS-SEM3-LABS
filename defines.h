@@ -6,5 +6,4 @@
 #define MAX_RESULT_TETRADS 20
 #define MAX_EXPONENT 99999
 
-
 #endif

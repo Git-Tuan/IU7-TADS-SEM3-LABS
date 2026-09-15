@@ -1,21 +1,21 @@
+#include "parse_functions.h"
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
-#include "parse_functions.h"
 
 static void reset_to_zero_if_zero(floating_point_t *float_number)
 {
     int all_zero = 1;
     int j = 0;
-    while (j < float_number->mantissa_len && all_zero == 1) 
+    while (j < float_number->mantissa_len && all_zero == 1)
     {
-        if (float_number->mantissa[j] != '0') 
+        if (float_number->mantissa[j] != '0')
         {
             all_zero = 0;
         }
         j++;
     }
-    if (all_zero == 1) 
+    if (all_zero == 1)
     {
         for (int i = 1; i < float_number->mantissa_len; i++)
             float_number->mantissa[i] = '\0';
@@ -24,7 +24,6 @@ static void reset_to_zero_if_zero(floating_point_t *float_number)
         float_number->mantissa_len = 1;
         float_number->exponent = 0;
     }
-        
 }
 
 static return_code_t skip_delimiters(const char *float_string, size_t length, size_t *current_index)
@@ -44,20 +43,20 @@ static return_code_t count_exponent(const char *float_string, size_t length, siz
     int exp_val = 0;
     int digit_count = 0;
 
-    while (*current_index < length && isdigit(float_string[*current_index])) 
+    while (*current_index < length && isdigit(float_string[*current_index]))
     {
         exp_val = exp_val * 10 + (float_string[*current_index] - '0');
         (*current_index)++;
         digit_count++;
     }
 
-    if (digit_count == 0 || (isdigit(float_string[*current_index]) == 0 && *current_index < length)) 
+    if (digit_count == 0 || (isdigit(float_string[*current_index]) == 0 && *current_index < length))
         rc = STATUS_EXPONENT_INPUT_ERROR;
-    else if (exp_val > MAX_EXPONENT) 
+    else if (exp_val > MAX_EXPONENT)
         rc = STATUS_EXPONENT_OVERFLOW_ERROR;
-    else 
+    else
         *exponent = exp_val;
-    
+
     return rc;
 }
 
@@ -68,18 +67,19 @@ static return_code_t parse_exponent(const char *float_string, size_t len, size_t
     int val = 0;
 
     rc = skip_delimiters(float_string, len, idx);
-    if (rc == STATUS_OK) 
+    if (rc == STATUS_OK)
     {
-        if (*idx < len && (float_string[*idx] == '+' || float_string[*idx] == '-')) 
+        if (*idx < len && (float_string[*idx] == '+' || float_string[*idx] == '-'))
         {
-            if (float_string[*idx] == '-') sign = -1;
+            if (float_string[*idx] == '-')
+                sign = -1;
             (*idx)++;
             rc = skip_delimiters(float_string, len, idx);
         }
-        if (rc == STATUS_OK) 
+        if (rc == STATUS_OK)
         {
             rc = count_exponent(float_string, len, idx, &val);
-            if (rc == STATUS_OK) 
+            if (rc == STATUS_OK)
                 *exponent = sign * val;
         }
     }
@@ -106,11 +106,10 @@ return_code_t process_float_number(const char *float_string, size_t length, floa
     size_t i = index;
     int started = 0;
 
-
     for (; rc == STATUS_OK && i < length && !has_exponent && !has_delim; i++)
     {
         if (strchr(digits, float_string[i]) != NULL)
-        { 
+        {
             if (started || float_string[i] != '0' || point_pos != -1)
             {
                 if (float_number->mantissa_len < MAX_MANTISSA_LEN - 1)
@@ -123,7 +122,7 @@ return_code_t process_float_number(const char *float_string, size_t length, floa
             }
             else if (float_string[i] == '0' && length == 1)
                 float_number->mantissa[float_number->mantissa_len++] = float_string[i];
-        }    
+        }
         else if (float_string[i] == '.')
         {
             if (point_pos == -1)
@@ -148,20 +147,21 @@ return_code_t process_float_number(const char *float_string, size_t length, floa
     if (rc == STATUS_OK)
         reset_to_zero_if_zero(float_number);
 
-    if (has_delim && rc == STATUS_OK) 
+    if (has_delim && rc == STATUS_OK)
     {
         rc = skip_delimiters(float_string, length, &i);
-        if (rc == STATUS_OK) {
-            if (i < length && (float_string[i] == 'E' || float_string[i] == 'e')) 
+        if (rc == STATUS_OK)
+        {
+            if (i < length && (float_string[i] == 'E' || float_string[i] == 'e'))
             {
                 i++;
                 rc = parse_exponent(float_string, length, &i, &float_number->exponent);
-            } 
-            else 
+            }
+            else
                 rc = STATUS_MISS_EXPONENT;
         }
     }
-    else if (has_exponent && rc == STATUS_OK) 
+    else if (has_exponent && rc == STATUS_OK)
         rc = parse_exponent(float_string, length, &i, &float_number->exponent);
 
     if (point_pos != -1)
@@ -170,7 +170,7 @@ return_code_t process_float_number(const char *float_string, size_t length, floa
         float_number->exponent -= shift;
     }
 
-    float_number->mantissa[MAX_MANTISSA_LEN-1] = '\0';
+    float_number->mantissa[MAX_MANTISSA_LEN - 1] = '\0';
 
     return rc;
 }
@@ -200,7 +200,7 @@ return_code_t get_integer(integer_t *buffer)
         is_significant = 1;
     }
 
-    while ( rc == STATUS_OK && (current_digit = getchar()) != '\n' && current_digit != EOF)
+    while (rc == STATUS_OK && (current_digit = getchar()) != '\n' && current_digit != EOF)
     {
         if (strchr(digits, current_digit) != NULL)
         {
@@ -232,5 +232,4 @@ return_code_t get_integer(integer_t *buffer)
         buffer->exponent = strlen(buffer->integer_str_format);
 
     return rc;
-
 }
