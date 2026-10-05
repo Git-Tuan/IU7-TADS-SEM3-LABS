@@ -71,6 +71,7 @@ void tetrads_to_string(char *mant_str, const int *tetrads, size_t len)
 
 void round_mantissa(char *mantissa, int *carry_exp)
 {
+    printf("Here is %s\n", mantissa);
     int len = strlen(mantissa);
     *carry_exp = 0;
 
@@ -102,4 +103,6 @@ void round_mantissa(char *mantissa, int *carry_exp)
             *carry_exp = 1;
         }
     }
+    else
+        printf("HELLO?\n");
 }
