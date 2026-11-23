@@ -1,0 +1,12 @@
+#ifndef DEFINES_H
+#define DEFINES_H
+
+#define MAX_STACK_SIZE 10
+#define BENCH_STACK_ELEMENTS 10
+#define MAX_FREE_ADDRESSES 100
+#define NOT_SET -1
+#define MAX_LINE_LEN 256
+#define MENU_MAX_CHOICE 10
+#define BENCH_REPEATS 200000
+
+#endif
