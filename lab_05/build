@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+gcc -std=c99 -g -O0 queue.c -o app.exe
