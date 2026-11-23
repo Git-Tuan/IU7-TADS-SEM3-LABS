@@ -36,6 +36,9 @@ void print_error_msg(rc_t exit_code)
     case STATUS_MATRIX_TOO_LARGE:
         printf("Ошибка: матрица слишком большая для плотного представления\n");
         break;
+    case STATUS_INPUT_EOF:
+        printf("Ввод завершён\n");
+        break;
     default:
         printf("Неизвестный код ошибки: %d\n", (int)exit_code);
         break;

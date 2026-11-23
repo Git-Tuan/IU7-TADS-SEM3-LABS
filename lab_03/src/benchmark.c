@@ -31,7 +31,6 @@ static void free_benchmark_buffers(DenseMatrix *dense_a, DenseMatrix *dense_b, D
 }
 
 static void print_benchmark_results(const CsrMatrix *csr_a, const CscMatrix *csc_b, const CsrMatrix *csr_c,
-                                    
     double t_sparse, double t_dense, size_t mem_sparse, size_t mem_dense)
 {
     printf("Размер A: %dx%d, nnz=%d\n", csr_a->rows, csr_a->cols, csr_a->nnz);
@@ -57,7 +56,7 @@ rc_t compare_single_run(const CsrMatrix *csr_a, const CscMatrix *csc_b)
     DenseMatrix *dense_a = (DenseMatrix *)malloc(sizeof(DenseMatrix));
     DenseMatrix *dense_b = (DenseMatrix *)malloc(sizeof(DenseMatrix));
     DenseMatrix *dense_c = (DenseMatrix *)malloc(sizeof(DenseMatrix));
-    CsrMatrix *csr_c = (CsrMatrix *)malloc(sizeof(CsrMatrix));
+    CsrMatrix *csr_c = (CsrMatrix *)calloc(1, sizeof(CsrMatrix));
 
     if (dense_a == NULL || dense_b == NULL || dense_c == NULL || csr_c == NULL)
     {
@@ -180,6 +179,7 @@ rc_t run_benchmark_suite(int rows, int inner, int cols, double density_from, dou
         {
             printf("Ошибка генерации при плотности %.3f\n", density);
             status = step;
+            bench_run_free(&run);
         }
         else
         {

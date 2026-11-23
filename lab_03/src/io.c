@@ -82,60 +82,62 @@ static rc_t triplet_buffer_push(TripletBuffer *buf, int r, int c, double v)
 
 static rc_t read_row_index(int rows, int *r, int *stop)
 {
-    rc_t status = STATUS_OK;
-    int scanned = 0;
+    rc_t status = STATUS_STRING_INPUT_ERROR;
+    char prompt[96];
+    snprintf(prompt, sizeof(prompt), "Строка [0..%d] (-1 — закончить ввод): ", rows - 1);
     *stop = 0;
-    printf("Строка (или -1): ");
-    scanned = scanf("%d", r);
-    if (scanned == EOF)
+    while (status != STATUS_OK && status != STATUS_INPUT_EOF)
     {
-        *stop = 1;
-        status = STATUS_STRING_INPUT_ERROR;
-    }
-    else if (scanned != 1)
-    {
-        flush_input();
-        status = STATUS_STRING_INPUT_ERROR;
-    }
-    else if (*r < 0)
-    {
-        *stop = 1;
-    }
-    else if (*r >= rows)
-    {
-        status = STATUS_INVALID_INDEX_ERROR;
+        status = read_int_once(prompt, r);
+        if (status == STATUS_OK)
+        {
+            if (*r < 0)
+            {
+                *stop = 1;
+            }
+            else if (*r >= rows)
+            {
+                status = STATUS_INVALID_INDEX_ERROR;
+            }
+        }
+        if (status != STATUS_OK && status != STATUS_INPUT_EOF)
+        {
+            print_error_msg(status);
+        }
     }
     return status;
 }
 
 static rc_t read_column_index(int cols, int *c)
 {
-    rc_t status = STATUS_OK;
-    int scanned = 0;
-    printf("Столбец: ");
-    scanned = scanf("%d", c);
-    if (scanned != 1)
+    rc_t status = STATUS_STRING_INPUT_ERROR;
+    char prompt[64];
+    snprintf(prompt, sizeof(prompt), "Столбец [0..%d]: ", cols - 1);
+    while (status != STATUS_OK && status != STATUS_INPUT_EOF)
     {
-        flush_input();
-        status = STATUS_STRING_INPUT_ERROR;
-    }
-    else if (*c < 0 || *c >= cols)
-    {
-        status = STATUS_INVALID_INDEX_ERROR;
+        status = read_int_once(prompt, c);
+        if (status == STATUS_OK && (*c < 0 || *c >= cols))
+        {
+            status = STATUS_INVALID_INDEX_ERROR;
+        }
+        if (status != STATUS_OK && status != STATUS_INPUT_EOF)
+        {
+            print_error_msg(status);
+        }
     }
     return status;
 }
 
 static rc_t read_value(double *v)
 {
-    rc_t status = STATUS_OK;
-    int scanned = 0;
-    printf("Значение: ");
-    scanned = scanf("%lf", v);
-    if (scanned != 1)
+    rc_t status = STATUS_STRING_INPUT_ERROR;
+    while (status != STATUS_OK && status != STATUS_INPUT_EOF)
     {
-        flush_input();
-        status = STATUS_STRING_INPUT_ERROR;
+        status = read_double_once("Значение (ненулевое вещественное число): ", v);
+        if (status != STATUS_OK && status != STATUS_INPUT_EOF)
+        {
+            print_error_msg(status);
+        }
     }
     return status;
 }
@@ -176,13 +178,9 @@ static rc_t collect_triplets(int rows, int cols, TripletBuffer *buf)
             int r = 0;
             int c = 0;
             double v = 0.0;
-            rc_t step = read_one_triplet(rows, cols, &r, &c, &v, &stop);
+            status = read_one_triplet(rows, cols, &r, &c, &v, &stop);
 
-            if (step == STATUS_STRING_INPUT_ERROR)
-            {
-                stop = 1;
-            }
-            else if (step == STATUS_OK && !stop)
+            if (status == STATUS_OK && !stop)
             {
                 if (v == 0.0)
                 {
@@ -198,83 +196,66 @@ static rc_t collect_triplets(int rows, int cols, TripletBuffer *buf)
                     status = triplet_buffer_push(buf, r, c, v);
                 }
             }
-            else if (step != STATUS_OK)
-            {
-                print_error_msg(step);
-            }
         }
         free(seen);
     }
     return status;
 }
 
+static rc_t read_sparse_triplets(int rows, int cols, TripletBuffer *buf)
+{
+    rc_t status = triplet_buffer_init(buf, 64);
+    if (status == STATUS_OK)
+    {
+        status = collect_triplets(rows, cols, buf);
+    }
+    if (status == STATUS_OK && buf->count == 0)
+    {
+        printf("Пустой ввод: ни одного ненулевого элемента не задано.\n");
+        status = STATUS_EMPTY_INPUT_ERROR;
+    }
+    return status;
+}
+
+/* Матрица A: запрашиваем оба размера. */
 rc_t input_coordinate_csr(CsrMatrix *matrix)
 {
-    rc_t status = STATUS_OK;
     int rows = 0;
     int cols = 0;
     TripletBuffer buf = {NULL, NULL, NULL, 0, 0};
+    rc_t status = read_int("Число строк матрицы A: ", 1, MAX_DIM, &rows);
 
-    status = read_int("Число строк матрицы: ", 1, MAX_DIM, &rows);
     if (status == STATUS_OK)
     {
-        status = read_int("Число столбцов матрицы: ", 1, MAX_DIM, &cols);
+        status = read_int("Число столбцов матрицы A: ", 1, MAX_DIM, &cols);
     }
     if (status == STATUS_OK)
     {
-        status = triplet_buffer_init(&buf, 64);
+        status = read_sparse_triplets(rows, cols, &buf);
     }
     if (status == STATUS_OK)
     {
-        status = collect_triplets(rows, cols, &buf);
-    }
-    if (status == STATUS_OK)
-    {
-        if (buf.count == 0)
-        {
-            printf("Пустой ввод: ни одного ненулевого элемента не задано.\n");
-            status = STATUS_EMPTY_INPUT_ERROR;
-        }
-        else
-        {
-            status = csr_from_triplets(matrix, rows, cols, buf.count, buf.rows, buf.cols, buf.values);
-        }
+        status = csr_from_triplets(matrix, rows, cols, buf.count, buf.rows, buf.cols, buf.values);
     }
     triplet_buffer_free(&buf);
     return status;
 }
 
-rc_t input_coordinate_csc(CscMatrix *matrix)
+rc_t input_coordinate_csc(CscMatrix *matrix, int rows)
 {
-    rc_t status = STATUS_OK;
-    int rows = 0;
     int cols = 0;
     TripletBuffer buf = {NULL, NULL, NULL, 0, 0};
+    rc_t status = STATUS_OK;
 
-    status = read_int("Число строк матрицы: ", 1, MAX_DIM, &rows);
+    printf("Матрица B имеет %d строк (равно числу столбцов A).\n", rows);
+    status = read_int("Число столбцов матрицы B: ", 1, MAX_DIM, &cols);
     if (status == STATUS_OK)
     {
-        status = read_int("Число столбцов матрицы: ", 1, MAX_DIM, &cols);
+        status = read_sparse_triplets(rows, cols, &buf);
     }
     if (status == STATUS_OK)
     {
-        status = triplet_buffer_init(&buf, 64);
-    }
-    if (status == STATUS_OK)
-    {
-        status = collect_triplets(rows, cols, &buf);
-    }
-    if (status == STATUS_OK)
-    {
-        if (buf.count == 0)
-        {
-            printf("  Пустой ввод: ни одного ненулевого элемента не задано.\n");
-            status = STATUS_EMPTY_INPUT_ERROR;
-        }
-        else
-        {
-            status = csc_from_triplets(matrix, rows, cols, buf.count, buf.rows, buf.cols, buf.values);
-        }
+        status = csc_from_triplets(matrix, rows, cols, buf.count, buf.rows, buf.cols, buf.values);
     }
     triplet_buffer_free(&buf);
     return status;

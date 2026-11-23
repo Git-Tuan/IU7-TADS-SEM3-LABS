@@ -14,17 +14,17 @@ void show_menu(void)
 {
     printf("\n");
     print_separator();
-    printf(" Лабораторная работа №3. Обработка разреженных матриц\n");
-    printf(" Вариант 5: A(CSR) * B(CSC) = C(CSR)\n");
+    printf("Лабораторная работа №3. Обработка разреженных матриц\n");
+    printf("Вариант 5: A(CSR) * B(CSC) = C(CSR)\n");
     print_separator();
-    printf("  1. Ручной ввод матриц (координатный способ)\n");
-    printf("  2. Автоматическая генерация (заданная плотность)\n");
-    printf("  3. Просмотр матриц (CSR/CSC и, если мала, плотно)\n");
-    printf("  4. Умножение разреженных матриц (A_CSR * B_CSC = C_CSR)\n");
-    printf("  5. Умножение плотных матриц (стандартный алгоритм)\n");
-    printf("  6. Сравнить эффективность (время и память)\n");
-    printf("  7. Освободить матрицы\n");
-    printf("  0. Выход\n");
+    printf("1. Ручной ввод матриц (координатный способ)\n");
+    printf("2. Автоматическая генерация (заданная плотность)\n");
+    printf("3. Просмотр матриц (CSR/CSC и, если мала, плотно)\n");
+    printf("4. Умножение разреженных матриц (A_CSR * B_CSC = C_CSR)\n");
+    printf("5. Умножение плотных матриц (стандартный алгоритм)\n");
+    printf("6. Сравнить эффективность (время и память)\n");
+    printf("7. Освободить матрицы\n");
+    printf("0. Выход\n");
     print_separator();
 }
 
@@ -45,7 +45,7 @@ rc_t handle_manual_input(AppContext *context)
     if (status == STATUS_OK)
     {
         printf("Матрица B (CSC):\n");
-        status = input_coordinate_csc(&context->csc_b);
+        status = input_coordinate_csc(&context->csc_b, context->csr_a.cols);
         if (status == STATUS_OK)
         {
             context->has_sparse_data = 1;
@@ -66,10 +66,9 @@ rc_t handle_manual_input(AppContext *context)
 
 rc_t handle_random_generation(AppContext *context)
 {
-    csr_free(&context->csr_a);
-    csc_free(&context->csc_b);
-
     rc_t status = STATUS_OK;
+
+    context_free(context);
 
     int rows = 0;
     int inner = 0;
@@ -88,7 +87,7 @@ rc_t handle_random_generation(AppContext *context)
     }
     if (status == STATUS_OK)
     {
-        status = read_double("Плотность (0.0 .. 1.0): ", 0.0, 1.0, &density);
+        status = read_double("Плотность: ", 0.0, 1.0, &density);
     }
     if (status == STATUS_OK)
     {
@@ -104,10 +103,14 @@ rc_t handle_random_generation(AppContext *context)
         context->has_dense_data = 0;
         printf("Сгенерировано: nnz(A)=%d, nnz(B)=%d.\n", context->csr_a.nnz, context->csc_b.nnz);
     }
+    if (status != STATUS_OK)
+    {
+        context_free(context);
+    }
     return status;
 }
 
-rc_t handle_show_matrices(AppContext *context)
+rc_t handle_show_matrices(AppContext *context, const DenseMatrix *dense_c)
 {
     rc_t status = STATUS_OK;
     printf("\nПросмотр матриц\n");
@@ -136,6 +139,14 @@ rc_t handle_show_matrices(AppContext *context)
             csr_print_arrays(&context->csr_c);
             printf("Плотный вид:\n");
             csr_print_dense(&context->csr_c);
+        }
+
+        if (context->has_dense_data)
+        {
+            printf("\nМатрица C = A*B (плотное умножение)\n");
+            printf("Размер %dx%d\n", dense_c->rows, dense_c->cols);
+            printf("Плотный вид:\n");
+            dense_print(dense_c);
         }
     }
     return status;
@@ -180,6 +191,7 @@ rc_t handle_dense_multiply(AppContext *context, DenseMatrix *dense_a, DenseMatri
     }
     else
     {
+        context->has_dense_data = 0;
         status = csr_to_dense(&context->csr_a, dense_a);
         if (status == STATUS_OK)
         {
@@ -212,19 +224,12 @@ rc_t handle_benchmark(AppContext *context)
     double density_to = 0.0;
     double density_step = 0.0;
     int choice = 0;
-    int scanned = 0;
 
     printf("\nСравнение эффективности\n");
     printf("1) Сравнить уже введённые матрицы\n");
     printf("2) Запустить серию тестов по плотностям\n");
-    printf("Выбор: ");
-    scanned = scanf("%d", &choice);
-    if (scanned != 1)
-    {
-        flush_input();
-        status = STATUS_STRING_INPUT_ERROR;
-    }
-    else if (choice == 1)
+    status = read_int_once("Выбор [1..2]: ", &choice);
+    if (status == STATUS_OK && choice == 1)
     {
         if (context->has_sparse_data)
         {
@@ -235,7 +240,7 @@ rc_t handle_benchmark(AppContext *context)
             status = STATUS_MATRIX_NOT_SET;
         }
     }
-    else if (choice == 2)
+    else if (status == STATUS_OK && choice == 2)
     {
         status = read_int("Строк A: ", 1, 500, &rows);
         if (status == STATUS_OK)
@@ -263,7 +268,7 @@ rc_t handle_benchmark(AppContext *context)
             status = run_benchmark_suite(rows, inner, cols, density_from, density_to, density_step);
         }
     }
-    else
+    else if (status == STATUS_OK)
     {
         status = STATUS_MENU_CHOICE_ERR;
     }

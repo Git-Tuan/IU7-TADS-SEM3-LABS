@@ -14,6 +14,7 @@ typedef enum
     STATUS_INVALID_DENSITY_ERROR = 8,
     STATUS_INVALID_DIMENSION_ERROR = 9,
     STATUS_MATRIX_TOO_LARGE = 10,
+    STATUS_INPUT_EOF = 11,
 } rc_t;
 
 void print_error_msg(rc_t exit_code);

@@ -42,6 +42,10 @@ int main(void)
         {
             print_error_msg(status);
         }
+        if (status == STATUS_INPUT_EOF)
+        {
+            exit_flag = 1;
+        }
     }
 
     context_free(&context);
@@ -64,7 +68,7 @@ static rc_t process_choice(AppContext *context, int choice, int *exit_flag)
     }
     else if (choice == 3)
     {
-        status = handle_show_matrices(context);
+        status = handle_show_matrices(context, &s_dense_c);
     }
     else if (choice == 4)
     {
